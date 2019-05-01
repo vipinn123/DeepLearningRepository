@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 from PIL import Image
 from nst_utils import *
+from tensorflow.python.keras import models
 
 import numpy as np
 import tensorflow as tf
@@ -22,6 +23,16 @@ class CONFIG:
     STYLE_IMAGE = 'images/stone_style.jpg' # Style image to use.
     CONTENT_IMAGE = 'images/content300.jpg' # Content image to use.
     OUTPUT_DIR = 'output/'
+
+def get_vgg_model(style_layers,CONTENT_LAYER):
+    vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
+    vgg.trainable = False
+    # Get output layers corresponding to style and content layers 
+    style_outputs = [vgg.get_layer(name).output for name in style_layers]
+    content_outputs = [vgg.get_layer(CONTENT_LAYER).output]
+    model_outputs = style_outputs + content_outputs
+    # Build model 
+    return models.Model(vgg.input, model_outputs)
     
 def load_vgg_model(path):
     """
@@ -176,6 +187,7 @@ def reshape_and_normalize_image(image):
     image = image - CONFIG.MEANS
     
     return image
+
 
 
 def save_image(path, image):
