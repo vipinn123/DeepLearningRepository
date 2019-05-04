@@ -160,7 +160,7 @@ def main(argv):
     VGG_MODEL_PATH="imagenet-vgg-verydeep-19"
     CONTENT_LAYER='block5_conv2'
     STYLE_LAYERS = ['block1_conv1','block2_conv1','block3_conv1', 'block4_conv1', 'block5_conv1']
-    num_iterations = 5000
+    num_iterations = 1000
 
     norm_means = np.array([103.939, 116.779, 123.68])
     min_vals = -norm_means
@@ -173,7 +173,7 @@ def main(argv):
 
     
     # TODO - The output size must sync with content image. Also why not initialize noise to average of content
-    input_image = generate_noise_image(reshape_and_normalize_image(scipy.misc.imread(CONTENT_PATH)),0.6)
+    input_image = generate_noise_image(reshape_and_normalize_image(scipy.misc.imread(CONTENT_PATH)),0.4)
     input_image = tfe.Variable(input_image,dtype=tf.float32)
     
     
@@ -187,22 +187,23 @@ def main(argv):
             
             input_image_vgg = model(tf.cast(input_image,tf.float32))
             
-            J,J_content,J_style = compute_total_cost(content_activations,style_activations,input_image_vgg,STYLE_LAYERS, CONTENT_LAYER,0.1,0.9)
+            J,J_content,J_style = compute_total_cost(content_activations,style_activations,input_image_vgg,STYLE_LAYERS, CONTENT_LAYER,0.3,0.7)
             
             grads = tape.gradient(J, input_image)
+
+            optimizer.apply_gradients([(grads,input_image)])
 
             clipped = tf.clip_by_value(input_image, min_vals, max_vals)
 
             input_image.assign(clipped)
 
-            assert grads != None
+            
 
             #print("###Loss J ######" + str(J))
             #print("###Loss J ######" + str(J_style))
             #print("###Loss J ######" + str(J_content))
             
-            optimizer.apply_gradients([(grads,input_image)])
-
+           
             
             # Print every 20 iteration.
             if i%20 == 0:
